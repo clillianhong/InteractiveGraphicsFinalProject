@@ -263,7 +263,7 @@ void App::drawContents()
 
         drawSobel();
 
-        // drawBloom(outlineFBO);
+        drawBloom(outlineFBO);
 
         glViewport(0, 0, mFBSize[0], mFBSize[1]);
         glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -274,7 +274,7 @@ void App::drawContents()
         // Last shading pass: post processing pass
         // lightingFBO->colorTexture().bindToTextureUnit(0);
         // sobelOutXFBO->colorTexture().bindToTextureUnit(0);
-        outlineFBO->colorTexture().bindToTextureUnit(0);
+        outputFBO->colorTexture().bindToTextureUnit(0);
 
         // bloomOutFBO->colorTexture().bindToTextureUnit(0);
 
@@ -432,7 +432,6 @@ void App::sobelPass(bool horizontal, const GLWrap::Texture2D* inTexture, std::sh
     // filterProg->uniform("level", level);
 
     fsqMesh->drawArrays(GL_TRIANGLE_FAN, 0, 4);
-
     filterProg->unuse();
 
     outFBO->unbind();

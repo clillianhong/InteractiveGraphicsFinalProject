@@ -41,6 +41,7 @@ public:
      */
     unsigned int numPointLights();
 
+    std::vector<float> thresholds;
     /**
      * Get the point light at a particular index from the scene
      * 

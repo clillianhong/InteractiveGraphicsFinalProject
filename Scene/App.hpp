@@ -48,14 +48,26 @@ private:
     std::unique_ptr<GLWrap::Program> skyProg;
 
     // Lighting pass
+    std::unique_ptr<GLWrap::Framebuffer> ambientFBO;
     std::unique_ptr<GLWrap::Program> ambientProg;
 
-    std::unique_ptr<GLWrap::Framebuffer> outputFBO;
+    // std::unique_ptr<GLWrap::Program> edgeProg;
+    std::unique_ptr<GLWrap::Program> filterProg;
+
+    std::shared_ptr<GLWrap::Framebuffer> outputFBO;
     std::unique_ptr<GLWrap::Program> lightProg;
-    std::unique_ptr<GLWrap::Framebuffer> lightingFBO;
+    std::shared_ptr<GLWrap::Framebuffer> lightingFBO;
+
+    std::shared_ptr<GLWrap::Framebuffer> sobelTempFBO;
+    std::shared_ptr<GLWrap::Framebuffer> sobelOutXFBO;
+    std::shared_ptr<GLWrap::Framebuffer> sobelOutYFBO;
+    std::unique_ptr<GLWrap::Framebuffer> edgesFBO;
+    std::shared_ptr<GLWrap::Framebuffer> outlineFBO;
 
     std::unique_ptr<GLWrap::Program> shadowProg;
     std::unique_ptr<GLWrap::Framebuffer> shadowFBO;
+
+    std::unique_ptr<GLWrap::Program> mergeEdgesProg;
 
     // Bloom pass
     std::unique_ptr<GLWrap::Program> bloomProg;
@@ -84,9 +96,13 @@ private:
 
     // Draw functions
     void drawAmbientAndSky();
+    void drawEdges();
     void drawLight(PositionalLight light);
-    void blurPass(float stdev, float weight, int k);
-    void drawBloom();
+    void blurPass(float stdev, float weight, int k, std::shared_ptr<GLWrap::Framebuffer> inFBO);
+    void drawBloom(std::shared_ptr<GLWrap::Framebuffer> inFBO);
+
+    void drawSobel();
+    void sobelPass(bool horizontal, const GLWrap::Texture2D* depthMap, std::shared_ptr<GLWrap::Framebuffer> outFBO);
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW

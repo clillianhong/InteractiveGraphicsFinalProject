@@ -43,17 +43,27 @@ App::App(const aiScene *importedScene, RTUtil::SceneInfo sceneInfo)
     ambientProg.reset(new GLWrap::Program("ambientProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
                                                           {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/ambient.frag"}}));
 
+    // edgeProg.reset(new GLWrap::Program("ambientProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
+    //                                                       {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/edge.frag"}}));
+
     lightProg.reset(new GLWrap::Program("lightProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
                                                       {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/lightshader.frag"}}));
 
     bloomProg.reset(new GLWrap::Program("bloomProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
                                                       {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/blur.fs"}}));
 
+    filterProg.reset(new GLWrap::Program("bloomProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
+                                                      {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/filter.fs"}}));
+
     srgbProg.reset(new GLWrap::Program("srgbProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
                                                     {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/srgb.frag"}}));
 
     mergeProg.reset(new GLWrap::Program("mergeProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
                                                       {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/merge.frag"}}));
+
+    mergeEdgesProg.reset(new GLWrap::Program("mergeProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
+                                                      {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/outline.frag"}}));
+
 
     // skyProg.reset(new GLWrap::Program("srgbProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
     //                                                 {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/sunsky.fs"}}));
@@ -135,10 +145,16 @@ App::App(const aiScene *importedScene, RTUtil::SceneInfo sceneInfo)
     // Create the FBOs
 
     outputFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
+    outlineFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
 
+    ambientFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
     lightingFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
     bloomTempFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
     bloomOutFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
+
+    sobelTempFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
+    sobelOutYFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
+    sobelOutXFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
 
     shadowFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[0]}, {}, {GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT}));
     gBuffer.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, 3));
@@ -235,14 +251,19 @@ void App::drawContents()
         // Do ambient shading pass
 
         drawAmbientAndSky();
+        // glDisable(GL_BLEND);
+        // drawEdges();
+        // glEnable(GL_BLEND);
 
-        for (unsigned int lightIdx = 0; lightIdx < scene->numPointLights(); lightIdx++)
-        {
-            PositionalLight light = scene->getLight(lightIdx);
-            drawLight(light);
-        }
+        // for (unsigned int lightIdx = 0; lightIdx < scene->numPointLights(); lightIdx++)
+        // {
+        //     PositionalLight light = scene->getLight(lightIdx);
+        //     drawLight(light);
+        // }
 
-        drawBloom();
+        drawSobel();
+
+        // drawBloom(outlineFBO);
 
         glViewport(0, 0, mFBSize[0], mFBSize[1]);
         glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -252,7 +273,8 @@ void App::drawContents()
 
         // Last shading pass: post processing pass
         // lightingFBO->colorTexture().bindToTextureUnit(0);
-        outputFBO->colorTexture().bindToTextureUnit(0);
+        // sobelOutXFBO->colorTexture().bindToTextureUnit(0);
+        outlineFBO->colorTexture().bindToTextureUnit(0);
 
         // bloomOutFBO->colorTexture().bindToTextureUnit(0);
 
@@ -279,9 +301,188 @@ void App::drawContents()
     }
 }
 
+void App::drawSobel() {
+    // // Simply add the edge values
+    // glEnable(GL_BLEND);
+    // glBlendEquation(GL_FUNC_ADD);
+    // glBlendFunc(GL_ONE, GL_ONE);
+
+    sobelOutXFBO->bind();
+    glClearColor(1.f, 0.f, 0.f, 1.f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    sobelOutXFBO->unbind();
+    sobelOutYFBO->bind();
+    glClearColor(1.f, 0.f, 0.f, 1.f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    sobelOutYFBO->unbind();
+
+    glEnable(GL_BLEND);
+    sobelPass(true, &gBuffer->depthTexture(), sobelOutXFBO);
+    sobelPass(false, &gBuffer->depthTexture(), sobelOutYFBO);
+    sobelPass(true, &gBuffer->colorTexture(2), sobelOutXFBO);
+    sobelPass(false, &gBuffer->colorTexture(2), sobelOutYFBO);
+    glDisable(GL_BLEND);
+
+
+    outlineFBO->bind();
+    glViewport(0, 0, mSize[0], mSize[1]);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_BLEND);
+    glDisable(GL_DEPTH_TEST);
+
+    mergeEdgesProg->use();
+
+    // // // for (int i = 0; i < 5; i++)
+    // // // {
+    // // //     std::stringstream weightStream;
+    // // //     weightStream << "weights[" << i << "]";
+    // // //     mergeProg->uniform(weightStream.str(), weights[i]);
+
+    // // //     std::stringstream levelStream;
+    // // //     levelStream << "levels[" << i << "]";
+    // // //     mergeProg->uniform(levelStream.str(), levels[i]);
+    // // // }
+    // // // mergeProg->uniform()
+
+    sobelOutXFBO->colorTexture().bindToTextureUnit(0);
+    mergeEdgesProg->uniform("sobelX", 0);
+    sobelOutYFBO->colorTexture().bindToTextureUnit(1);
+    mergeEdgesProg->uniform("sobelY", 1);
+    lightingFBO->colorTexture().bindToTextureUnit(2);
+    mergeEdgesProg->uniform("unoutlinedTex", 2);
+
+    fsqMesh->drawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    mergeEdgesProg->unuse();
+    outlineFBO->unbind();
+}
+
+void App::sobelPass(bool horizontal, const GLWrap::Texture2D* inTexture, std::shared_ptr<GLWrap::Framebuffer> outFBO)
+{
+    Eigen::Vector2f x = Eigen::Vector2f(1.f, 0.f);
+    Eigen::Vector2f y = Eigen::Vector2f(0.f, 1.f);
+
+    // float mipmapStdev = stdev / (std::pow(2, level));
+    // int radius = std::ceil(3.0 * mipmapStdev);
+
+    // int radius = std::ceil(3.0 * stdev);
+
+    // Horizontal blur
+
+    sobelTempFBO->bind();
+    glViewport(0, 0, mSize[0], mSize[1]);
+
+    // bloomTempFBO->bind();
+
+    glClearColor(1.f, 0.f, 0.f, 1.f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+
+    filterProg->use();
+
+    // Send the unblurred image to blur vertically
+    inTexture->bindToTextureUnit(0);
+    filterProg->uniform("dir", horizontal ? y : x); // Along y axis
+    filterProg->uniform("image", 0);
+    // filterProg->uniform("stdev", mipmapStdev);
+    // bloomProg->uniform("radius", radius);
+    filterProg->uniform("convFilter[0]", 1);
+    filterProg->uniform("convFilter[1]", 2);
+    filterProg->uniform("convFilter[2]", 1);
+    // bloomProg->uniform("weight", weight);
+    // filterProg->uniform("isActive", stdev > 0.0); // Active only if stdev is positive
+    // // bloomProg->uniform("weight", 1.f);
+    // bloomProg->uniform("active", true);
+    // filterProg->uniform("level", level);
+
+    fsqMesh->drawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    filterProg->unuse();
+
+    sobelTempFBO->unbind();
+
+    // Vertical blur
+
+    outFBO->bind();
+    
+    glViewport(0, 0, mSize[0], mSize[1]);
+    // bloomOutFBO->bind();
+
+    filterProg->use();
+
+    // Send the image that has been blurred vertically to blur horizontally
+    sobelTempFBO->colorTexture().bindToTextureUnit(0);
+    filterProg->uniform("dir", horizontal ? x : y); // Along y axis
+    filterProg->uniform("image", 0);
+    // filterProg->uniform("stdev", mipmapStdev);
+    filterProg->uniform("convFilter[0]", 1);
+    filterProg->uniform("convFilter[1]", 0);
+    filterProg->uniform("convFilter[2]", -1);
+    // bloomProg->uniform("radius", radius);
+    // bloomProg->uniform("weight", weight);
+    // filterProg->uniform("isActive", stdev > 0.0); // Active only if stdev is positive
+    // bloomProg->uniform("weight", 1.f);
+    // bloomProg->uniform("active", true);
+    // filterProg->uniform("level", level);
+
+    fsqMesh->drawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    filterProg->unuse();
+
+    outFBO->unbind();
+}
+
+// void App::drawEdges()
+// {
+//     lightingFBO->bind();
+
+//     edgeProg->use();
+
+//     AmbientLight ambientLight = scene->getAmbientLight();
+
+//     RTUtil::Sky sky = scene->getSky();
+//     sky.setUniforms(*edgeProg);
+
+//     // std::cout << "range! " << ambientLight.range() << std::endl;
+//     edgeProg->uniform("ambientRadiance", ambientLight.radiance());
+//     edgeProg->uniform("mProjInv", cam->getProjectionMatrix().inverse().matrix());
+//     edgeProg->uniform("mProj", cam->getProjectionMatrix().matrix());
+//     edgeProg->uniform("occlusionRange", ambientLight.range());
+//     edgeProg->uniform("mViewInv", cam->getViewMatrix().inverse().matrix());
+
+//     gBuffer->colorTexture(0).bindToTextureUnit(0);
+//     edgeProg->uniform("diffuseReflectance", 0);
+//     gBuffer->colorTexture(1).bindToTextureUnit(1);
+//     edgeProg->uniform("shaderParamTexture", 1);
+//     gBuffer->colorTexture(2).bindToTextureUnit(2);
+//     edgeProg->uniform("normalTexture", 2);
+//     gBuffer->depthTexture().bindToTextureUnit(3);
+//     edgeProg->uniform("depthTexture", 3);
+//     ambientFBO->colorTexture().bindToTextureUnit(4);
+//     edgeProg->uniform("image", 4);
+
+//     // Draw the full screen quad
+//     fsqMesh->drawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+//     edgeProg->unuse();
+
+//     lightingFBO->unbind();
+// }
+
 void App::drawAmbientAndSky()
 {
     lightingFBO->bind();
+
+    glViewport(0, 0, mSize[0], mSize[1]);
+    glClearColor(0.f, 0.f, 0.f, 0.f); // So that each quad we draw is on top of 0's
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST); // Otherwise, one quad won't write over the previous one
 
     ambientProg->use();
 
@@ -369,7 +570,7 @@ void App::drawLight(PositionalLight light)
     lightingFBO->unbind();
 }
 
-void App::blurPass(float stdev, float weight, int level)
+void App::blurPass(float stdev, float weight, int level, std::shared_ptr<GLWrap::Framebuffer> inFBO)
 {
     float mipmapStdev = stdev / (std::pow(2, level));
     int radius = std::ceil(3.0 * mipmapStdev);
@@ -391,7 +592,7 @@ void App::blurPass(float stdev, float weight, int level)
     bloomProg->use();
 
     // Send the unblurred image to blur vertically
-    lightingFBO->colorTexture().bindToTextureUnit(0);
+    inFBO->colorTexture().bindToTextureUnit(0);
     bloomProg->uniform("dir", Eigen::Vector2f(0.f, 1.f)); // Along y axis
     bloomProg->uniform("image", 0);
     bloomProg->uniform("stdev", mipmapStdev);
@@ -435,7 +636,7 @@ void App::blurPass(float stdev, float weight, int level)
     bloomOutFBO->unbind();
 }
 
-void App::drawBloom()
+void App::drawBloom(std::shared_ptr<GLWrap::Framebuffer> inFBO)
 {
     // lightingFBO->colorTexture().generateMipmap();
     // lightingFBO->colorTexture().parameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
@@ -444,8 +645,8 @@ void App::drawBloom()
     // bloomOutFBO->colorTexture().generateMipmap();
     // bloomOutFBO->colorTexture().parameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 
-    lightingFBO->colorTexture().generateMipmap();
-    lightingFBO->colorTexture().parameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    inFBO->colorTexture().generateMipmap();
+    inFBO->colorTexture().parameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     bloomTempFBO->colorTexture().generateMipmap();
     bloomTempFBO->colorTexture().parameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     bloomOutFBO->colorTexture().generateMipmap();
@@ -462,7 +663,7 @@ void App::drawBloom()
 
     for (int i = 0; i < 5; i++)
     {
-        blurPass(stdevs[i], weights[i], levels[i]);
+        blurPass(stdevs[i], weights[i], levels[i], inFBO);
     }
 
     outputFBO->bind();
@@ -493,6 +694,8 @@ void App::drawBloom()
     mergeProg->unuse();
     outputFBO->unbind();
 }
+
+
 
 RTUtil::PerspectiveCamera App::createLightCamera(PositionalLight light)
 {

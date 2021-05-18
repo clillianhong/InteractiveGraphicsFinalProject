@@ -84,7 +84,7 @@ private:
     RTUtil::PerspectiveCamera createLightCamera(PositionalLight light);
 
     //TANK CONTROL
-    std::chrono::_V2::system_clock::time_point curTime = std::chrono::high_resolution_clock::now();
+    std::chrono::steady_clock::time_point curTime = std::chrono::high_resolution_clock::now();
     const float CAMERA_VELOCITY = 0.001;
     const float CAMERA_ANGULAR_VELOCITY = 0.001;
     const int FORWARD_KEY = GLFW_KEY_W;

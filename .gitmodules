@@ -1,0 +1,12 @@
+[submodule "ext/nanogui"]
+	path = ext/nanogui
+	url = https://github.com/wjakob/nanogui.git
+[submodule "ext/cpplocate"]
+	path = ext/cpplocate
+	url = https://github.com/cginternals/cpplocate.git
+[submodule "ext/stb"]
+	path = ext/stb
+	url = https://github.com/nothings/stb.git
+[submodule "ext/assimp"]
+	path = ext/assimp
+	url = https://github.com/assimp/assimp.git

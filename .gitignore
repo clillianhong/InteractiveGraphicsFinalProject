@@ -3,4 +3,4 @@ xcodebuild/
 .DS_Store
 *.blend1
 debug_build/
-resources/
+ext/ 

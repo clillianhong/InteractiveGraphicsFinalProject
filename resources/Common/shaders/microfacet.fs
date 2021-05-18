@@ -109,27 +109,3 @@ float isotropicMicrofacet(vec3 i, vec3 o, vec3 n, float eta, float alpha) {
     float G = G1(i,m,n,alpha) * G1(o,m,n,alpha);
     return F * G * D(m,n,alpha) / (4.0*idotn*odotn);
 }
-
-void main() {
-  vec3 normal = normalize((gl_FrontFacing) ? vNormal : -vNormal);
-  // float NdotH = max(dot(normalize(normal), normalize(lightDir)), 0.0);
-
-  vec3 lightPos = (mV * mL * vec4(lightPosition, 1.0)).xyz;
-
-  vec3 lightDir = lightPos - vPosition;
-  vec3 viewDir = -vPosition;
-  float lightToPtSqrDist = dot(lightDir, lightDir);
-
-  lightDir = normalize(lightDir);
-  viewDir = normalize(viewDir);
-
-  float NdotW = max(dot(normal, lightDir), 0.0);
-
-  vec3 lightIrr = lightPower / (4.0 * PI);
-
-  vec3 brdf = (diffuseReflectance / PI) + isotropicMicrofacet(lightDir, viewDir, normal, refractiveIndex, roughness);
-
-  // fragColor = sRGB(vec4(refractiveIndex / 10, 0, 0, 1));
-
-  fragColor = sRGB(vec4(lightIrr * brdf * (NdotW / lightToPtSqrDist), 1.0));
-}

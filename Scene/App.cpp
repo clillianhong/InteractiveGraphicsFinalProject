@@ -29,8 +29,7 @@ App::App(const aiScene *importedScene, RTUtil::SceneInfo sceneInfo)
     const std::string resourcePath =
         cpplocate::locatePath("resources/Common", "", nullptr) + "resources/";
 
-    forwardProg.reset(new GLWrap::Program("forwardProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/smooth.vs"},
-                                                          {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/microfacet.fs"}}));
+    forwardProg.reset(new GLWrap::Program("forwardProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/smooth.vs"}}));
 
     geomProg.reset(new GLWrap::Program("geomProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/smooth.vs"},
                                                     {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/gbuff.frag"}}));
@@ -329,6 +328,12 @@ void App::drawContents()
         // Do ambient shading pass
 
         drawAmbientAndSky();
+
+        for (int i = 0; i < scene->thresholds.size(); i++)
+        {
+            auto uniName = "thresholds[" + std::to_string(i) + "]";
+            lightProg->uniform(uniName, scene->thresholds[i]);
+        }
 
         for (unsigned int lightIdx = 0; lightIdx < scene->numPointLights(); lightIdx++)
         {

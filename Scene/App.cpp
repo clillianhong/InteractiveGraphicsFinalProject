@@ -10,6 +10,7 @@
 #include <nanogui/window.h>
 #include <nanogui/glcanvas.h>
 #include <nanogui/layout.h>
+#include <ctime>
 
 #include <cpplocate/cpplocate.h>
 
@@ -28,8 +29,7 @@ App::App(const aiScene *importedScene, RTUtil::SceneInfo sceneInfo)
     const std::string resourcePath =
         cpplocate::locatePath("resources/Common", "", nullptr) + "resources/";
 
-    forwardProg.reset(new GLWrap::Program("forwardProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/smooth.vs"},
-                                                          {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/microfacet.fs"}}));
+    // forwardProg.reset(new GLWrap::Program("forwardProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/smooth.vs"}}));
 
     geomProg.reset(new GLWrap::Program("geomProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/smooth.vs"},
                                                     {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/gbuff.frag"}}));
@@ -47,7 +47,8 @@ App::App(const aiScene *importedScene, RTUtil::SceneInfo sceneInfo)
     //                                                       {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/edge.frag"}}));
 
     lightProg.reset(new GLWrap::Program("lightProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
-                                                      {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/lightshader.frag"}}));
+                                                      {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/lightshader.frag"},
+                                                      {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/microfacet.fs"}}));
 
     bloomProg.reset(new GLWrap::Program("bloomProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
                                                       {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/blur.fs"}}));
@@ -67,6 +68,15 @@ App::App(const aiScene *importedScene, RTUtil::SceneInfo sceneInfo)
 
     // skyProg.reset(new GLWrap::Program("srgbProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
     //                                                 {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/sunsky.fs"}}));
+
+    keys[FORWARD_KEY] = false;
+    keys[BACKWARD_KEY] = false;
+    keys[PIVOT_UP_KEY] = false;
+    keys[PIVOT_DOWN_KEY] = false;
+    keys[PIVOT_LEFT_KEY] = false;
+    keys[PIVOT_RIGHT_KEY] = false;
+    keys[LEFT_KEY] = false;
+    keys[RIGHT_KEY] = false;
 
     screenWidth = App::windowWidth;
     screenHeight = App::windowHeight;
@@ -172,16 +182,27 @@ bool App::keyboardEvent(int key, int scancode, int action, int modifiers)
     if (Screen::keyboardEvent(key, scancode, action, modifiers))
         return true;
 
-    // If the user presses the escape key...
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     {
-        // ...exit the application.
         setVisible(false);
         return true;
     }
-    else if (key == GLFW_KEY_D && action == GLFW_RELEASE)
+    else if (key == GLFW_KEY_F && action == GLFW_RELEASE)
     {
         deferredShading = !deferredShading;
+    }
+
+    //tank controls set key values
+    if (key >= 0 && key < NUM_KEYS)
+    {
+        if (!keys[key] && action == GLFW_PRESS)
+        {
+            keys[key] = true;
+        }
+        else if (keys[key] && action == GLFW_RELEASE)
+        {
+            keys[key] = false;
+        }
     }
 
     return cc->keyboardEvent(key, scancode, action, modifiers);
@@ -205,11 +226,83 @@ bool App::scrollEvent(const Eigen::Vector2i &p, const Eigen::Vector2f &rel)
            cc->scrollEvent(p, rel);
 }
 
+void App::update(float deltaTime)
+{
+    float distance = deltaTime * CAMERA_VELOCITY;
+    float angle = deltaTime * CAMERA_ANGULAR_VELOCITY;
+    if (keys[FORWARD_KEY])
+    {
+        std::cout << "Moving forward, dt = " << deltaTime << std::endl;
+        // scene.moveForward(distance);
+        moveCameraFrontBack(distance);
+    }
+    if (keys[BACKWARD_KEY])
+    {
+        std::cout << "Moving backward, dt = " << deltaTime << std::endl;
+        moveCameraFrontBack(-distance);
+        // scene.moveForward(-distance);
+    }
+    else if (keys[RIGHT_KEY])
+    {
+        std::cout << "rotate right, dt = " << deltaTime << std::endl;
+        // scene.rotate(-angle, Eigen::Vector3f::UnitY());
+        moveCameraLeftRight(distance);
+    }
+    if (keys[LEFT_KEY])
+    {
+        std::cout << "rotate left, dt = " << deltaTime << std::endl;
+        // scene.rotate(angle, Eigen::Vector3f::UnitY());
+        moveCameraLeftRight(-distance);
+    }
+    if (keys[PIVOT_DOWN_KEY])
+    {
+        std::cout << "rotate down, dt = " << deltaTime << std::endl;
+        // scene.rotate(-angle, Eigen::Vector3f::UnitX());
+        cam->setTarget(cam->getTarget() + -angle * cam->getUp().normalized());
+    }
+    if (keys[PIVOT_UP_KEY])
+    {
+        std::cout << "rotate up, dt = " << deltaTime << std::endl;
+        // scene.rotate(angle, Eigen::Vector3f::UnitX());
+        cam->setTarget(cam->getTarget() + angle * cam->getUp().normalized());
+    }
+    if (keys[PIVOT_RIGHT_KEY])
+    {
+        cam->setTarget(cam->getTarget() + angle * cam->getRight().normalized());
+    }
+    if (keys[PIVOT_LEFT_KEY])
+    {
+        cam->setTarget(cam->getTarget() + -angle * cam->getRight().normalized());
+    }
+}
+
+void App::moveCameraFrontBack(float distance)
+{
+    Eigen::Vector3f camDir = cam->getTarget() - cam->getEye();
+    camDir.normalize();
+    Eigen::Vector3f newCamPos = cam->getEye() + distance * camDir;
+    cam->setEye(newCamPos);
+    cam->setTarget(cam->getTarget() + distance * camDir);
+}
+
+void App::moveCameraLeftRight(float distance)
+{
+    Eigen::Vector3f newCamPos = cam->getEye() + distance * cam->getRight().normalized();
+    Eigen::Vector3f newTargetPos = cam->getTarget() + distance * cam->getRight().normalized();
+    cam->setEye(newCamPos);
+    cam->setTarget(newTargetPos);
+}
+
 void App::drawContents()
 {
     GLWrap::checkGLError("drawContents start");
     glClearColor(backgroundColor.r(), backgroundColor.g(), backgroundColor.b(), backgroundColor.w());
 
+    // tank control update
+    auto now = std::chrono::high_resolution_clock::now();
+    double deltaTime = std::chrono::duration<double, std::milli>(now - curTime).count();
+    curTime = now;
+    update(deltaTime);
     // First shading pass: geometry pass
     if (deferredShading)
     {
@@ -261,8 +354,19 @@ void App::drawContents()
         //     drawLight(light);
         // }
 
-        drawSobel();
+        for (int i = 0; i < scene->thresholds.size(); i++)
+        {
+            auto uniName = "thresholds[" + std::to_string(i) + "]";
+            lightProg->uniform(uniName, scene->thresholds[i]);
+        }
 
+        for (unsigned int lightIdx = 0; lightIdx < scene->numPointLights(); lightIdx++)
+        {
+            PositionalLight light = scene->getLight(lightIdx);
+            drawLight(light);
+        }
+
+        drawSobel();
         drawBloom(outlineFBO);
 
         glViewport(0, 0, mFBSize[0], mFBSize[1]);
@@ -297,7 +401,7 @@ void App::drawContents()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
         // glViewport(0, 0, screenWidth, screenHeight);
-        scene->draw(forwardProg, true);
+        // scene->draw(forwardProg, true);
     }
 }
 

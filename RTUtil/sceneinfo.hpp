@@ -19,13 +19,20 @@
 #include "common.hpp"
 
 // forward decl
-namespace nori { class BSDF; }
+namespace nori
+{
+    class BSDF;
+}
 
-namespace RTUtil {
+namespace RTUtil
+{
 
     // An enumeration to distinguish different types of lights
-    enum LightType {
-        Point, Area, Ambient
+    enum LightType
+    {
+        Point,
+        Area,
+        Ambient
     };
 
     /**
@@ -33,7 +40,8 @@ namespace RTUtil {
      * and a type, and depending on the type, a subset of the remaining fields hold the
      * relevant information about the light.
      */
-    struct RTUTIL_EXPORT LightInfo {
+    struct RTUTIL_EXPORT LightInfo
+    {
 
         // The name of the node corresponding to this light.  If there is a node in the scene
         // by this name, then the transformation of that node applies to this light.  If there
@@ -52,7 +60,7 @@ namespace RTUtil {
         Eigen::Vector3f position;
 
         // For Area lights: the direction normal to the light's rectangular surface, and the
-        // vector that defines the orientation of the height dimension of the rectangle (in 
+        // vector that defines the orientation of the height dimension of the rectangle (in
         // the same way as for a standard camera specification)
         Eigen::Vector3f normal, up;
 
@@ -64,19 +72,19 @@ namespace RTUtil {
 
         // For Ambient lights: the maximum distance of an occluder for ambient light.  Setting
         // this to positive infinity gives standard ambient occlusion.
-        float range;    
+        float range;
     };
-
 
     /**
      * Holds all the auxiliary information parsed by this module.
      */
-    struct RTUTIL_EXPORT SceneInfo {
+    struct RTUTIL_EXPORT SceneInfo
+    {
 
         // Map from a material name to a BSDF that specifies the material with that name
         std::map<std::string, std::shared_ptr<nori::BSDF>> namedMaterials;
 
-        // Map from a node name to a BSDF that specifies the default material for geometry 
+        // Map from a node name to a BSDF that specifies the default material for geometry
         // below that node when there is not an entry for its material in materialsByName;
         std::map<std::string, std::shared_ptr<nori::BSDF>> nodeMaterials;
 
@@ -89,8 +97,9 @@ namespace RTUtil {
 
         // The background radiance of the scene (for rays that miss all geometry)
         Eigen::Vector3f backgroundRadiance;
-    };
 
+        std::vector<float> thresholds;
+    };
 
     /**
      * Parse scene info from a file.  This is the main entry point for this module, and the
@@ -103,6 +112,3 @@ namespace RTUtil {
     RTUTIL_EXPORT bool readSceneInfo(const std::string infoPath, SceneInfo &info);
 
 }
-
-
-

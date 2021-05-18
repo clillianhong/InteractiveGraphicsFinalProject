@@ -37,7 +37,7 @@ Scene::Scene(int w, int h, const aiScene *importedSceneOriginal, RTUtil::SceneIn
             }
         }
     }
-
+    thresholds = sceneInfo.thresholds;
     rootNode = createHierarchy(importedSceneOriginal, importedSceneOriginal->mRootNode, nullptr, sceneInfo);
 }
 

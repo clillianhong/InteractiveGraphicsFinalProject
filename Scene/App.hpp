@@ -12,6 +12,7 @@
 #include <GLWrap/Mesh.hpp>
 #include <GLWrap/Framebuffer.hpp>
 #include <RTUtil/Camera.hpp>
+#include <chrono>
 #include <RTUtil/CameraController.hpp>
 
 #include "Scene.hpp"
@@ -82,11 +83,31 @@ private:
 
     RTUtil::PerspectiveCamera createLightCamera(PositionalLight light);
 
+    //TANK CONTROL
+    std::chrono::_V2::system_clock::time_point curTime = std::chrono::high_resolution_clock::now();
+    const float CAMERA_VELOCITY = 0.001;
+    const float CAMERA_ANGULAR_VELOCITY = 0.001;
+    const int FORWARD_KEY = GLFW_KEY_W;
+    const int BACKWARD_KEY = GLFW_KEY_S;
+    const int LEFT_KEY = GLFW_KEY_A;
+    const int RIGHT_KEY = GLFW_KEY_D;
+    const int PIVOT_UP_KEY = GLFW_KEY_UP;
+    const int PIVOT_DOWN_KEY = GLFW_KEY_DOWN;
+    const int PIVOT_RIGHT_KEY = GLFW_KEY_RIGHT;
+    const int PIVOT_LEFT_KEY = GLFW_KEY_LEFT;
+    static constexpr int NUM_KEYS = 1024;
+    std::array<bool, NUM_KEYS> keys;
+
     // Draw functions
     void drawAmbientAndSky();
     void drawLight(PositionalLight light);
     void blurPass(float stdev, float weight, int k);
     void drawBloom();
+    void update(float deltaTime);
+    void moveCameraFrontBack(float distance);
+    void moveCameraLeftRight(float distance);
+    void pivotCameraUpDown(float angle);
+    void pivotCameraLeftRight(float angle);
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW

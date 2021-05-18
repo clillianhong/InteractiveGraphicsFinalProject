@@ -45,7 +45,8 @@ App::App(const aiScene *importedScene, RTUtil::SceneInfo sceneInfo)
                                                           {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/ambient.frag"}}));
 
     lightProg.reset(new GLWrap::Program("lightProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
-                                                      {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/lightshader.frag"}}));
+                                                      {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/lightshader.frag"},
+                                                      {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/microfacet.fs"}}));
 
     bloomProg.reset(new GLWrap::Program("bloomProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
                                                       {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/blur.fs"}}));

@@ -380,8 +380,8 @@ void App::drawContents()
         // Last shading pass: post processing pass
         // lightingFBO->colorTexture().bindToTextureUnit(0);
         // sobelOutXFBO->colorTexture().bindToTextureUnit(0);
-        // outputFBO->colorTexture().bindToTextureUnit(0);
-        outlineFBO->colorTexture().bindToTextureUnit(0);
+        outputFBO->colorTexture().bindToTextureUnit(0);
+        // outlineFBO->colorTexture().bindToTextureUnit(0);
 
         // bloomOutFBO->colorTexture().bindToTextureUnit(0);
 

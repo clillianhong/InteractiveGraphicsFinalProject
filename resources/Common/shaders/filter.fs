@@ -28,7 +28,7 @@ void main() {
     vec4 color;
 
     if (isActive) {
-        vec2 d = 1.0 / textureSize(image, 0);
+        vec2 d = dir * 1.0 / textureSize(image, 0);
         vec3 s = vec3(0);
         for (int i = -RADIUS; i <= RADIUS; i++) {
             float w = convFilter[i + 1];

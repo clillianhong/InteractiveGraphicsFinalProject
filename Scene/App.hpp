@@ -60,8 +60,10 @@ private:
     std::shared_ptr<GLWrap::Framebuffer> lightingFBO;
 
     std::shared_ptr<GLWrap::Framebuffer> sobelTempFBO;
-    std::shared_ptr<GLWrap::Framebuffer> sobelOutXFBO;
-    std::shared_ptr<GLWrap::Framebuffer> sobelOutYFBO;
+    std::shared_ptr<GLWrap::Framebuffer> sobelDepthXFBO;
+    std::shared_ptr<GLWrap::Framebuffer> sobelDepthYFBO;
+    std::shared_ptr<GLWrap::Framebuffer> sobelNormsXFBO;
+    std::shared_ptr<GLWrap::Framebuffer> sobelNormsYFBO;
     std::unique_ptr<GLWrap::Framebuffer> edgesFBO;
     std::shared_ptr<GLWrap::Framebuffer> outlineFBO;
 

@@ -163,8 +163,10 @@ App::App(const aiScene *importedScene, RTUtil::SceneInfo sceneInfo)
     bloomOutFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
 
     sobelTempFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
-    sobelOutYFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
-    sobelOutXFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
+    sobelDepthYFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
+    sobelDepthXFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
+    sobelNormsYFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
+    sobelNormsXFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, {{GL_RGBA32F, GL_RGBA}}));
 
     shadowFBO.reset(new GLWrap::Framebuffer({mSize[0], mSize[0]}, {}, {GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT}));
     gBuffer.reset(new GLWrap::Framebuffer({mSize[0], mSize[1]}, 3));
@@ -304,8 +306,8 @@ void App::drawContents()
     curTime = now;
     update(deltaTime);
     // First shading pass: geometry pass
-    if (deferredShading)
-    {
+    // if (deferredShading)
+    // {
         // Do the geometry pass first
 
         gBuffer->bind();
@@ -378,7 +380,8 @@ void App::drawContents()
         // Last shading pass: post processing pass
         // lightingFBO->colorTexture().bindToTextureUnit(0);
         // sobelOutXFBO->colorTexture().bindToTextureUnit(0);
-        outputFBO->colorTexture().bindToTextureUnit(0);
+        // outputFBO->colorTexture().bindToTextureUnit(0);
+        outlineFBO->colorTexture().bindToTextureUnit(0);
 
         // bloomOutFBO->colorTexture().bindToTextureUnit(0);
 
@@ -395,14 +398,14 @@ void App::drawContents()
         // Draw the full screen quad
         fsqMesh->drawArrays(GL_TRIANGLE_FAN, 0, 4);
         srgbProg->unuse();
-    }
-    else
-    {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
-        // glViewport(0, 0, screenWidth, screenHeight);
-        // scene->draw(forwardProg, true);
-    }
+    // }
+    // else
+    // {
+    //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //     glEnable(GL_DEPTH_TEST);
+    //     // glViewport(0, 0, screenWidth, screenHeight);
+    //     scene->draw(forwardProg, true);
+    // }
 }
 
 void App::drawSobel() {
@@ -411,24 +414,42 @@ void App::drawSobel() {
     // glBlendEquation(GL_FUNC_ADD);
     // glBlendFunc(GL_ONE, GL_ONE);
 
-    sobelOutXFBO->bind();
-    glClearColor(1.f, 0.f, 0.f, 1.f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_BLEND);
-    sobelOutXFBO->unbind();
-    sobelOutYFBO->bind();
-    glClearColor(1.f, 0.f, 0.f, 1.f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_BLEND);
-    sobelOutYFBO->unbind();
+    // Clear the sobel framebuffers
+    std::vector<std::shared_ptr<GLWrap::Framebuffer>> toClear = {
+        sobelDepthXFBO,
+        sobelDepthYFBO,
+        sobelNormsXFBO,
+        sobelNormsYFBO
+    };
+    for (auto fbo : toClear) {
+        fbo->bind();
+        glClearColor(1.f, 0.f, 0.f, 1.f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
+        fbo->unbind();
+    }
+
+    // sobelDepthXFBO->bind();
+    // glClearColor(1.f, 0.f, 0.f, 1.f);
+    // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // glDisable(GL_DEPTH_TEST);
+    // glDisable(GL_BLEND);
+    // sobelDepthXFBO->unbind();
+    // sobelDepthYFBO->bind();
+    // glClearColor(1.f, 0.f, 0.f, 1.f);
+    // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // glDisable(GL_DEPTH_TEST);
+    // glDisable(GL_BLEND);
+    // sobelOutYFBO->unbind();
 
     glEnable(GL_BLEND);
-    sobelPass(true, &gBuffer->depthTexture(), sobelOutXFBO);
-    sobelPass(false, &gBuffer->depthTexture(), sobelOutYFBO);
-    sobelPass(true, &gBuffer->colorTexture(2), sobelOutXFBO);
-    sobelPass(false, &gBuffer->colorTexture(2), sobelOutYFBO);
+    // Edge detection on the depths
+    sobelPass(true, &gBuffer->depthTexture(), sobelDepthXFBO);
+    sobelPass(false, &gBuffer->depthTexture(), sobelDepthYFBO);
+    // Edge detection on the normals
+    sobelPass(true, &gBuffer->colorTexture(2), sobelNormsXFBO);
+    sobelPass(false, &gBuffer->colorTexture(2), sobelNormsYFBO);
     glDisable(GL_BLEND);
 
 
@@ -453,12 +474,16 @@ void App::drawSobel() {
     // // // }
     // // // mergeProg->uniform()
 
-    sobelOutXFBO->colorTexture().bindToTextureUnit(0);
-    mergeEdgesProg->uniform("sobelX", 0);
-    sobelOutYFBO->colorTexture().bindToTextureUnit(1);
-    mergeEdgesProg->uniform("sobelY", 1);
-    lightingFBO->colorTexture().bindToTextureUnit(2);
-    mergeEdgesProg->uniform("unoutlinedTex", 2);
+    lightingFBO->colorTexture().bindToTextureUnit(0);
+    mergeEdgesProg->uniform("unoutlinedTex", 0);
+    sobelDepthXFBO->colorTexture().bindToTextureUnit(1);
+    mergeEdgesProg->uniform("sobelDepthX", 1);
+    sobelDepthYFBO->colorTexture().bindToTextureUnit(2);
+    mergeEdgesProg->uniform("sobelDepthY", 2);
+    sobelNormsXFBO->colorTexture().bindToTextureUnit(3);
+    mergeEdgesProg->uniform("sobelNormsX", 3);
+    sobelNormsYFBO->colorTexture().bindToTextureUnit(4);
+    mergeEdgesProg->uniform("sobelNormsY", 4);
 
     fsqMesh->drawArrays(GL_TRIANGLE_FAN, 0, 4);
 
@@ -492,8 +517,9 @@ void App::sobelPass(bool horizontal, const GLWrap::Texture2D* inTexture, std::sh
 
     // Send the unblurred image to blur vertically
     inTexture->bindToTextureUnit(0);
-    filterProg->uniform("dir", horizontal ? y : x); // Along y axis
     filterProg->uniform("image", 0);
+    filterProg->uniform("dir", horizontal ? y : x); // Along y axis
+    // filterProg->uniform("isActive", false);
     // filterProg->uniform("stdev", mipmapStdev);
     // bloomProg->uniform("radius", radius);
     filterProg->uniform("convFilter[0]", 1);

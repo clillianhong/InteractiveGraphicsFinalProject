@@ -17,8 +17,8 @@ int main(int argc, char const *argv[])
   const aiScene *importedScene = importer.importFromFile(resourcePath + "resources/scenes/" + sceneName + ".dae");
 
   RTUtil::SceneInfo sceneInfo;
-  RTUtil::readSceneInfo(resourcePath + "resources/scenes/" + +"citystreet_single_info.json", sceneInfo);
-  // RTUtil::readSceneInfo(resourcePath + "resources/scenes/" + sceneName + "_info.json", sceneInfo);
+  // RTUtil::readSceneInfo(resourcePath + "resources/scenes/" + +"citystreet_single_info.json", sceneInfo);
+  RTUtil::readSceneInfo(resourcePath + "resources/scenes/" + sceneName + "_info.json", sceneInfo);
 
   nanogui::init();
 

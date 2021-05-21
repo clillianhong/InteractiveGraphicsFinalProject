@@ -124,5 +124,8 @@
       "diffuse": [ 0.9, 0.9, 0.9 ],
       "roughness": 0.9
     }
-  ]
+  ],
+    "thresholds": [
+        0.5
+    ]
 }

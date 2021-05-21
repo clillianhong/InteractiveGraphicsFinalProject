@@ -8,33 +8,38 @@
 
 int main(int argc, char const *argv[])
 {
-  std::string sceneName = argv[1];
+    std::string sceneName = argv[1];
+    std::string infoName;
+    if (argc > 2)
+    {
+        infoName = argv[2];
+    }
 
-  const std::string resourcePath =
-      cpplocate::locatePath("resources/scenes", "", nullptr);
+    const std::string resourcePath =
+        cpplocate::locatePath("resources/scenes", "", nullptr);
 
-  Importer importer;
-  const aiScene *importedScene = importer.importFromFile(resourcePath + "resources/scenes/" + sceneName + ".dae");
+    Importer importer;
+    const aiScene *importedScene = importer.importFromFile(resourcePath + "resources/scenes/" + sceneName + ".dae");
 
-  RTUtil::SceneInfo sceneInfo;
-  // RTUtil::readSceneInfo(resourcePath + "resources/scenes/" + +"citystreet_single_info.json", sceneInfo);
-  RTUtil::readSceneInfo(resourcePath + "resources/scenes/" + sceneName + "_info.json", sceneInfo);
+    RTUtil::SceneInfo sceneInfo;
+    // RTUtil::readSceneInfo(resourcePath + "resources/scenes/" + +"citystreet_single_info.json", sceneInfo);
+    RTUtil::readSceneInfo(resourcePath + "resources/scenes/" + ((argc > 2) ? infoName : sceneName) + "_info.json", sceneInfo);
 
-  nanogui::init();
+    nanogui::init();
 
-  nanogui::ref<App> app = new App(importedScene, sceneInfo);
-  nanogui::mainloop(16);
+    nanogui::ref<App> app = new App(importedScene, sceneInfo);
+    nanogui::mainloop(16);
 
-  // if (argc > 1 && std::string(argv[1]) == "Tetra") {
-  //   nanogui::ref<TetraApp> app = new TetraApp();
-  //   nanogui::mainloop(16);
-  // } else if (argc > 1 && std::string(argv[1]) == "Sky") {
-  //   nanogui::ref<SkyApp> app = new SkyApp();
-  //   nanogui::mainloop(16);
-  // } else {
-  //   nanogui::ref<DemoApp> app = new DemoApp();
-  //   nanogui::mainloop(16);
-  // }
+    // if (argc > 1 && std::string(argv[1]) == "Tetra") {
+    //   nanogui::ref<TetraApp> app = new TetraApp();
+    //   nanogui::mainloop(16);
+    // } else if (argc > 1 && std::string(argv[1]) == "Sky") {
+    //   nanogui::ref<SkyApp> app = new SkyApp();
+    //   nanogui::mainloop(16);
+    // } else {
+    //   nanogui::ref<DemoApp> app = new DemoApp();
+    //   nanogui::mainloop(16);
+    // }
 
-  nanogui::shutdown();
+    nanogui::shutdown();
 }

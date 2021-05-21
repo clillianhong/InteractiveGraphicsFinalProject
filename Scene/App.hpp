@@ -99,8 +99,8 @@ private:
 
     //TANK CONTROL
     std::chrono::steady_clock::time_point curTime = std::chrono::high_resolution_clock::now();
-    const float CAMERA_VELOCITY = 0.001;
-    const float CAMERA_ANGULAR_VELOCITY = 0.001;
+    const float CAMERA_VELOCITY = 0.005;
+    const float CAMERA_ANGULAR_VELOCITY = 0.03;
     const int FORWARD_KEY = GLFW_KEY_W;
     const int BACKWARD_KEY = GLFW_KEY_S;
     const int LEFT_KEY = GLFW_KEY_A;
@@ -119,7 +119,7 @@ private:
     void blurPass(float stdev, float weight, int k, std::shared_ptr<GLWrap::Framebuffer> inFBO);
     void drawBloom(std::shared_ptr<GLWrap::Framebuffer> inFBO);
     void drawSobel();
-    void sobelPass(bool horizontal, const GLWrap::Texture2D* depthMap, std::shared_ptr<GLWrap::Framebuffer> outFBO);
+    void sobelPass(bool horizontal, const GLWrap::Texture2D *depthMap, std::shared_ptr<GLWrap::Framebuffer> outFBO);
 
     void update(float deltaTime);
     void moveCameraFrontBack(float distance);

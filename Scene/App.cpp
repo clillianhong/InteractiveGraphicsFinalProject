@@ -54,7 +54,7 @@ App::App(const aiScene *importedScene, RTUtil::SceneInfo sceneInfo)
                                                       {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/blur.fs"}}));
 
     filterProg.reset(new GLWrap::Program("bloomProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
-                                                      {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/filter.fs"}}));
+                                                       {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/filter.fs"}}));
 
     srgbProg.reset(new GLWrap::Program("srgbProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
                                                     {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/srgb.frag"}}));
@@ -63,8 +63,7 @@ App::App(const aiScene *importedScene, RTUtil::SceneInfo sceneInfo)
                                                       {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/merge.frag"}}));
 
     mergeEdgesProg.reset(new GLWrap::Program("mergeProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
-                                                      {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/outline.frag"}}));
-
+                                                           {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/outline.frag"}}));
 
     // skyProg.reset(new GLWrap::Program("srgbProg", {{GL_VERTEX_SHADER, resourcePath + "Common/shaders/fsq.vert"},
     //                                                 {GL_FRAGMENT_SHADER, resourcePath + "Common/shaders/sunsky.fs"}}));
@@ -308,96 +307,96 @@ void App::drawContents()
     // First shading pass: geometry pass
     // if (deferredShading)
     // {
-        // Do the geometry pass first
+    // Do the geometry pass first
 
-        gBuffer->bind();
+    gBuffer->bind();
 
-        glViewport(0, 0, mSize[0], mSize[1]);
+    glViewport(0, 0, mSize[0], mSize[1]);
 
-        // Note: looked at tutorial by Joey DeVries, "LearnOpenGL"
-        // https://learnopengl.com/Advanced-Lighting/Deferred-Shading
-        GLenum attachments[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
-        glDrawBuffers(3, attachments);
+    // Note: looked at tutorial by Joey DeVries, "LearnOpenGL"
+    // https://learnopengl.com/Advanced-Lighting/Deferred-Shading
+    GLenum attachments[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+    glDrawBuffers(3, attachments);
 
-        glClearColor(0.f, 0.f, 0.f, 0.f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
+    glClearColor(0.f, 0.f, 0.f, 0.f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
 
-        scene->draw(geomProg, true);
+    scene->draw(geomProg, true);
 
-        gBuffer->unbind();
+    gBuffer->unbind();
 
-        // Set up the lighting FBO
+    // Set up the lighting FBO
 
-        lightingFBO->bind();
+    lightingFBO->bind();
 
-        glViewport(0, 0, mSize[0], mSize[1]);
-        glClearColor(0.f, 0.f, 0.f, 0.f); // So that each quad we draw is on top of 0's
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glDisable(GL_DEPTH_TEST); // Otherwise, one quad won't write over the previous one
+    glViewport(0, 0, mSize[0], mSize[1]);
+    glClearColor(0.f, 0.f, 0.f, 0.f); // So that each quad we draw is on top of 0's
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST); // Otherwise, one quad won't write over the previous one
 
-        // Simply add the light values
-        glEnable(GL_BLEND);
-        glBlendEquation(GL_FUNC_ADD);
-        glBlendFunc(GL_ONE, GL_ONE);
+    // Simply add the light values
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_ONE, GL_ONE);
 
-        lightingFBO->unbind();
+    lightingFBO->unbind();
 
-        // Do ambient shading pass
+    // Do ambient shading pass
 
-        drawAmbientAndSky();
-        // glDisable(GL_BLEND);
-        // drawEdges();
-        // glEnable(GL_BLEND);
+    drawAmbientAndSky();
+    // glDisable(GL_BLEND);
+    // drawEdges();
+    // glEnable(GL_BLEND);
 
-        // for (unsigned int lightIdx = 0; lightIdx < scene->numPointLights(); lightIdx++)
-        // {
-        //     PositionalLight light = scene->getLight(lightIdx);
-        //     drawLight(light);
-        // }
+    // for (unsigned int lightIdx = 0; lightIdx < scene->numPointLights(); lightIdx++)
+    // {
+    //     PositionalLight light = scene->getLight(lightIdx);
+    //     drawLight(light);
+    // }
 
-        for (int i = 0; i < scene->thresholds.size(); i++)
-        {
-            auto uniName = "thresholds[" + std::to_string(i) + "]";
-            lightProg->uniform(uniName, scene->thresholds[i]);
-        }
+    for (int i = 0; i < scene->thresholds.size(); i++)
+    {
+        auto uniName = "thresholds[" + std::to_string(i) + "]";
+        lightProg->uniform(uniName, scene->thresholds[i]);
+    }
 
-        for (unsigned int lightIdx = 0; lightIdx < scene->numPointLights(); lightIdx++)
-        {
-            PositionalLight light = scene->getLight(lightIdx);
-            drawLight(light);
-        }
+    for (unsigned int lightIdx = 0; lightIdx < scene->numPointLights(); lightIdx++)
+    {
+        PositionalLight light = scene->getLight(lightIdx);
+        drawLight(light);
+    }
 
-        drawSobel();
-        drawBloom(outlineFBO);
+    drawSobel();
+    drawBloom(outlineFBO);
 
-        glViewport(0, 0, mFBSize[0], mFBSize[1]);
-        glClearColor(0.f, 0.f, 0.f, 1.f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
-        glDisable(GL_BLEND);
+    glViewport(0, 0, mFBSize[0], mFBSize[1]);
+    glClearColor(0.f, 0.f, 0.f, 1.f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
 
-        // Last shading pass: post processing pass
-        // lightingFBO->colorTexture().bindToTextureUnit(0);
-        // sobelOutXFBO->colorTexture().bindToTextureUnit(0);
-        outputFBO->colorTexture().bindToTextureUnit(0);
-        // outlineFBO->colorTexture().bindToTextureUnit(0);
+    // Last shading pass: post processing pass
+    // lightingFBO->colorTexture().bindToTextureUnit(0);
+    // sobelOutXFBO->colorTexture().bindToTextureUnit(0);
+    outputFBO->colorTexture().bindToTextureUnit(0);
+    // outlineFBO->colorTexture().bindToTextureUnit(0);
 
-        // bloomOutFBO->colorTexture().bindToTextureUnit(0);
+    // bloomOutFBO->colorTexture().bindToTextureUnit(0);
 
-        // gBuffer->colorTexture(0).bindToTextureUnit(0);
-        // shadowFBO->depthTexture().bindToTextureUnit(0);
-        // bloomOutFBO->colorTexture().bindToTextureUnit(0);
+    // gBuffer->colorTexture(0).bindToTextureUnit(0);
+    // shadowFBO->depthTexture().bindToTextureUnit(0);
+    // bloomOutFBO->colorTexture().bindToTextureUnit(0);
 
-        srgbProg->use();
-        srgbProg->uniform("exposure", 1.0f);
-        srgbProg->uniform("backgroundColor", backgroundColor);
+    srgbProg->use();
+    srgbProg->uniform("exposure", 1.0f);
+    srgbProg->uniform("backgroundColor", backgroundColor);
 
-        // bloomTempFBO->colorTexture().bindToTextureUnit(0);
-        srgbProg->uniform("image", 0);
-        // Draw the full screen quad
-        fsqMesh->drawArrays(GL_TRIANGLE_FAN, 0, 4);
-        srgbProg->unuse();
+    // bloomTempFBO->colorTexture().bindToTextureUnit(0);
+    srgbProg->uniform("image", 0);
+    // Draw the full screen quad
+    fsqMesh->drawArrays(GL_TRIANGLE_FAN, 0, 4);
+    srgbProg->unuse();
     // }
     // else
     // {
@@ -408,7 +407,8 @@ void App::drawContents()
     // }
 }
 
-void App::drawSobel() {
+void App::drawSobel()
+{
     // // Simply add the edge values
     // glEnable(GL_BLEND);
     // glBlendEquation(GL_FUNC_ADD);
@@ -419,9 +419,9 @@ void App::drawSobel() {
         sobelDepthXFBO,
         sobelDepthYFBO,
         sobelNormsXFBO,
-        sobelNormsYFBO
-    };
-    for (auto fbo : toClear) {
+        sobelNormsYFBO};
+    for (auto fbo : toClear)
+    {
         fbo->bind();
         glClearColor(1.f, 0.f, 0.f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -451,7 +451,6 @@ void App::drawSobel() {
     sobelPass(true, &gBuffer->colorTexture(2), sobelNormsXFBO);
     sobelPass(false, &gBuffer->colorTexture(2), sobelNormsYFBO);
     glDisable(GL_BLEND);
-
 
     outlineFBO->bind();
     glViewport(0, 0, mSize[0], mSize[1]);
@@ -491,7 +490,7 @@ void App::drawSobel() {
     outlineFBO->unbind();
 }
 
-void App::sobelPass(bool horizontal, const GLWrap::Texture2D* inTexture, std::shared_ptr<GLWrap::Framebuffer> outFBO)
+void App::sobelPass(bool horizontal, const GLWrap::Texture2D *inTexture, std::shared_ptr<GLWrap::Framebuffer> outFBO)
 {
     Eigen::Vector2f x = Eigen::Vector2f(1.f, 0.f);
     Eigen::Vector2f y = Eigen::Vector2f(0.f, 1.f);
@@ -540,7 +539,7 @@ void App::sobelPass(bool horizontal, const GLWrap::Texture2D* inTexture, std::sh
     // Vertical blur
 
     outFBO->bind();
-    
+
     glViewport(0, 0, mSize[0], mSize[1]);
     // bloomOutFBO->bind();
 
@@ -823,8 +822,6 @@ void App::drawBloom(std::shared_ptr<GLWrap::Framebuffer> inFBO)
     mergeProg->unuse();
     outputFBO->unbind();
 }
-
-
 
 RTUtil::PerspectiveCamera App::createLightCamera(PositionalLight light)
 {

@@ -80,22 +80,18 @@ void main() {
         lightDir = normalize(lightDir);
         float NdotW = max(dot(normal, lightDir), 0);
         
-        float lightIrr = lightPower.r / (4.0 * PI);
+        float intensity = NdotW;
 
-        float microfacet_output = isotropicMicrofacet(lightDir, viewDir, normal, refractiveIndex, roughness);
+        color = (diffuseReflectance / PI);
 
-        float grayscale = lightIrr * microfacet_output * (NdotW / lightToPtSqrDist);
-
-        float quantized = 0.0;
-
-        if (grayscale > thresholds[0]) {
-            quantized = 1;
-        }
-        else {
-            quantized = 0;
-        }
-
-        color = (diffuseReflectance / PI) + quantized;
+        if (intensity > thresholds[0])
+            color = color * 0.5;
+        else if (intensity > thresholds[1])
+            color = color * 1.0;
+        else if (intensity > thresholds[2])
+            color = color * 1.5;
+        else
+            color = color * 0.05;
 
     } else {
         color = vec3(0, 0, 0);

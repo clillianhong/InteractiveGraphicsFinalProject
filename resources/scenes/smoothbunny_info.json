@@ -16,7 +16,7 @@
         },
         {
             "node": "Area",
-            "type": "point",
+            "type": "point_",
             "position": [
                 0,
                 0,
@@ -74,6 +74,8 @@
         }
     ],
     "thresholds": [
-        0.5
+        0.8,
+        0.3,
+        0.2
     ]
 }

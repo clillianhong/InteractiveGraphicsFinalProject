@@ -9,6 +9,11 @@
 int main(int argc, char const *argv[])
 {
   std::string sceneName = argv[1];
+  std::string infoName;
+  if (argc > 2)
+  {
+    infoName = argv[2];
+  }
 
   const std::string resourcePath =
       cpplocate::locatePath("resources/scenes", "", nullptr);
@@ -17,8 +22,8 @@ int main(int argc, char const *argv[])
   const aiScene *importedScene = importer.importFromFile(resourcePath + "resources/scenes/" + sceneName + ".dae");
 
   RTUtil::SceneInfo sceneInfo;
-  RTUtil::readSceneInfo(resourcePath + "resources/scenes/" + +"citystreet_single_info.json", sceneInfo);
-  // RTUtil::readSceneInfo(resourcePath + "resources/scenes/" + sceneName + "_info.json", sceneInfo);
+  // RTUtil::readSceneInfo(resourcePath + "resources/scenes/" + +"citystreet_single_info.json", sceneInfo);
+  RTUtil::readSceneInfo(resourcePath + "resources/scenes/" + ((argc > 2) ? infoName : sceneName) + "_info.json", sceneInfo);
 
   nanogui::init();
 

@@ -85,7 +85,7 @@ void main() {
         color = (diffuseReflectance / PI);
 
         if (intensity > thresholds[0])
-            color = color * 1.5;
+            color = color * 3.0;
         else if (intensity > thresholds[1])
             color = color * 1.0;
         else if (intensity > thresholds[2])

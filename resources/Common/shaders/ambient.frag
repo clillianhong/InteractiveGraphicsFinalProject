@@ -180,8 +180,8 @@ void main() {
 
         // fragColor = vec4(normalize(dir), 1.0);
 
-        // fragColor = vec4(sunskyRadiance(dir), 1.0);
-        fragColor = vec4(0, 0, 0, 1.0);
+        fragColor = vec4(sunskyRadiance(dir), 1.0);
+        // fragColor = vec4(0, 0, 0, 1.0);
     
     } else {
 
